@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deep Dive | Watch Water Resistance Explorer</title>
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JCPV5MB308"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-JCPV5MB308');
+    </script>
+    
+    <!-- SEO & Author -->
+    <meta name="description" content="An interactive journey through dive watch water resistance ratings, from 100m to the Mariana Trench at 11,000m. Explore 15 legendary timepieces engineered for the deep.">
+    <meta name="author" content="Ajinkya Nair">
+    <meta name="keywords" content="dive watches, water resistance, Rolex Deepsea, Omega Seamaster, watch depth ratings, luxury watches">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://deepdivewatches.com/">
+    <meta property="og:title" content="The Deep Dive | Watch Water Resistance Explorer">
+    <meta property="og:description" content="Descend 11,000 meters into the abyss and discover timepieces engineered to withstand the crushing depths of our ocean.">
+    <meta property="og:image" content="https://deepdivewatches.com/images/rolex_deepsea_challenge.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Deep Dive | Watch Water Resistance Explorer">
+    <meta name="twitter:description" content="An interactive exploration of dive watches from 100m to 11,000m.">
+    <meta name="twitter:image" content="https://deepdivewatches.com/images/rolex_deepsea_challenge.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Outfit:wght@200;300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --card-bg: rgba(12, 28, 48, 0.92);
+            --card-border: rgba(100, 170, 220, 0.18);
+            --text: #ffffff;
+            --text-secondary: rgba(200, 225, 245, 0.85);
+            --cyan: #00d4ff;
+            --cyan-soft: rgba(0, 212, 255, 0.15);
+            --gold: #d4a954;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #050d14;
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ocean Background */
+        #ocean {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            transition: background 0.5s ease;
+        }
+
+        /* Vignette overlay - intensifies with depth */
+        #vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.3);
+            transition: box-shadow 0.5s ease;
+        }
+
+        /* Caustics - canvas-based for performance */
+        #caustics {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Particles */
+        .bubble {
+            position: fixed;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            z-index: 2;
+            pointer-events: none;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            from { transform: translateY(100vh); opacity: 0.5; }
+            to { transform: translateY(-50px); opacity: 0; }
+        }
+
+        /* Depth Gauge - Vertical scale on left */
+        #depth-gauge {
+            position: fixed;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            height: 70vh;
+            max-height: 500px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .gauge-track {
+            position: relative;
+            width: 3px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-left: 40px;
+        }
+        
+        .gauge-track::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--progress, 0%);
+            background: linear-gradient(to bottom, var(--cyan), rgba(0, 150, 200, 0.6));
+            border-radius: 2px;
+            transition: height 0.15s ease;
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* Depth markings along the track */
+        .gauge-mark {
+            position: absolute;
+            left: -35px;
+            transform: translateY(-50%);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .gauge-mark::after {
+            content: '';
+            width: 8px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .gauge-mark.major {
+            opacity: 0.8;
+            font-size: 0.6rem;
+        }
+        
+        .gauge-mark.major::after {
+            width: 12px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* The moving pointer/arrow */
+        .gauge-pointer {
+            position: absolute;
+            left: 8px;
+            top: 0;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0;
+            transition: top 0.15s ease;
+            z-index: 10;
+        }
+        
+        .gauge-arrow {
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 10px solid var(--cyan);
+            filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.6));
+        }
+        
+        .gauge-readout {
+            background: linear-gradient(145deg, rgba(8, 20, 35, 0.95) 0%, rgba(4, 12, 24, 0.95) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-left: -1px;
+            min-width: 90px;
+            box-shadow: 
+                0 0 20px rgba(0, 0, 0, 0.4),
+                0 0 15px rgba(0, 212, 255, 0.15);
+        }
+        
+        .gauge-depth {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cyan);
+            line-height: 1;
+            text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+        }
+        
+        .gauge-depth .unit {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-left: 1px;
+        }
+        
+        .gauge-stats {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(0, 212, 255, 0.15);
+        }
+        
+        .gauge-stat {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+        }
+        
+        .gauge-stat .val {
+            color: var(--text);
+        }
+
+        /* Hero */
+        /* Hero - Dramatic Entry */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 60px 24px 120px;
+            position: relative;
+            z-index: 10;
+        }
+        .hero-surface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(180deg, 
+                rgba(255,255,255,0.4) 0%, 
+                rgba(0,212,255,0.3) 50%,
+                transparent 100%);
+            box-shadow: 
+                0 0 60px 30px rgba(255,255,255,0.1),
+                0 0 100px 60px rgba(0,212,255,0.1);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .hero-tag {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--cyan);
+            margin-bottom: 16px;
+            animation: fadeIn 1s ease 0.2s both;
+        }
+        .hero h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(3.5rem, 12vw, 7rem);
+            font-weight: 300;
+            line-height: 1.05;
+            margin-bottom: 8px;
+            animation: fadeIn 1s ease 0.4s both;
+        }
+        .hero h1 em {
+            font-style: italic;
+            color: var(--cyan);
+        }
+        .hero-byline {
+            margin-bottom: 32px;
+            animation: fadeIn 1s ease 0.6s both;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .byline-name {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+        }
+        .byline-name a {
+            color: var(--text);
+            text-decoration: none;
+            border-bottom: 1px solid var(--cyan);
+            transition: color 0.2s;
+        }
+        .byline-name a:hover {
+            color: var(--cyan);
+        }
+        .byline-date {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            letter-spacing: 0.1em;
+        }
+        .byline-socials {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+        }
+        .byline-socials a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--text-secondary);
+            transition: all 0.25s ease;
+        }
+        .byline-socials a:hover {
+            background: rgba(0,212,255,0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            transform: translateY(-2px);
+        }
+        .byline-socials svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+        .hero-depth {
+            margin-bottom: 32px;
+            animation: fadeIn 1s ease 0.8s both;
+        }
+        .hero-depth-num {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(5rem, 18vw, 12rem);
+            font-weight: 700;
+            color: var(--cyan);
+            line-height: 1;
+            text-shadow: 0 0 80px rgba(0,212,255,0.5);
+        }
+        .hero-depth-unit {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            font-weight: 400;
+            color: var(--cyan);
+            opacity: 0.7;
+            margin-left: 4px;
+        }
+        .hero-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 400px;
+            margin-bottom: 48px;
+            line-height: 1.8;
+            animation: fadeIn 1s ease 1s both;
+        }
+        .scroll-hint {
+            position: absolute;
+            bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            animation: fadeIn 1s ease 1.2s both;
+        }
+        .scroll-hint span {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--cyan);
+            font-weight: 500;
+        }
+        .scroll-hint .icon {
+            width: 28px;
+            height: 44px;
+            border: 2px solid rgba(0,212,255,0.4);
+            border-radius: 14px;
+            position: relative;
+        }
+        .scroll-hint .icon::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 8px;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 10px;
+            background: var(--cyan);
+            border-radius: 2px;
+            animation: descend 2s ease-in-out infinite;
+        }
+        @keyframes descend {
+            0%, 100% { top: 8px; opacity: 1; }
+            50% { top: 22px; opacity: 0.3; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Sections */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 24px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            position: relative;
+            z-index: 10;
+        }
+        /* Deeper sections get more breathing room */
+        .section.deep-zone {
+            min-height: 120vh;
+            padding: 120px 24px;
+        }
+        .section.abyss-zone {
+            min-height: 140vh;
+            padding: 160px 24px;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .section-inner {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Zone Markers */
+        .zone {
+            text-align: center;
+        }
+        .zone .range {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--cyan);
+            margin-bottom: 8px;
+        }
+        .zone h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.4rem;
+            font-weight: 400;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .zone .sci {
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .zone .desc {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            max-width: 400px;
+            margin: 0 auto 16px;
+        }
+        .zone-stats {
+            display: inline-flex;
+            gap: 32px;
+            padding-top: 14px;
+            border-top: 1px solid var(--card-border);
+        }
+        .zone-stats div { text-align: center; }
+        .zone-stats .v {
+            display: block;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--cyan);
+        }
+        .zone-stats .l {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+        }
+
+        /* Info Cards - Removed, replaced by fact cards */
+
+        /* Fact Cards - Clean, visual, wonder-focused */
+        .fact-card {
+            max-width: 540px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 48px 32px;
+        }
+        .fact-card .big-number {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(3rem, 10vw, 5rem);
+            font-weight: 700;
+            color: var(--cyan);
+            line-height: 1;
+            margin-bottom: 8px;
+            text-shadow: 0 0 40px rgba(0,212,255,0.3);
+        }
+        .fact-card .big-number .unit {
+            font-size: 0.4em;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+        .fact-card .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--cyan);
+            margin-bottom: 24px;
+        }
+        .fact-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-weight: 400;
+            margin-bottom: 16px;
+            color: var(--text);
+            line-height: 1.3;
+        }
+        .fact-card p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            max-width: 440px;
+            margin: 0 auto;
+        }
+        
+        /* Comparison Card - for "deeper than X" moments */
+        .comparison-card {
+            max-width: 480px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 40px 24px;
+        }
+        .comparison-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            opacity: 0.8;
+        }
+        .comparison-card .vs {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .comparison-card .vs-item {
+            text-align: center;
+        }
+        .comparison-card .vs-item .num {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.8rem;
+            color: var(--cyan);
+            font-weight: 600;
+        }
+        .comparison-card .vs-item .lbl {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+        .comparison-card .vs-divider {
+            width: 40px;
+            height: 1px;
+            background: rgba(0,212,255,0.3);
+        }
+        .comparison-card p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        /* Watch Story Card - narrative context for watches */
+        .watch-story {
+            max-width: 560px;
+            margin: 0 auto 40px;
+            text-align: center;
+            padding: 0 24px;
+        }
+        .watch-story .year {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--cyan);
+            letter-spacing: 0.15em;
+            margin-bottom: 12px;
+        }
+        .watch-story h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 400;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        .watch-story p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ===================== */
+        /* CREATURE CARDS - Life in the deep */
+        /* ===================== */
+        .creature-card {
+            max-width: 520px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .creature-card .visual {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.12) 0%, rgba(0, 50, 80, 0.08) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .creature-card .visual::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 212, 255, 0.08);
+        }
+        .creature-card .visual .emoji {
+            font-size: 4rem;
+            opacity: 0.85;
+        }
+        .creature-card .visual img {
+            max-width: 140px;
+            max-height: 140px;
+            object-fit: contain;
+        }
+        .creature-card .depth-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        .creature-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .creature-card .latin {
+            font-style: italic;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            margin-bottom: 16px;
+        }
+        .creature-card p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* ===================== */
+        /* LANDMARK CARDS */
+        /* ===================== */
+        .landmark-card {
+            max-width: 480px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .landmark-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            opacity: 0.8;
+        }
+        .landmark-card .depth-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        .landmark-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 400;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        .landmark-card p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Watch Cards */
+        .watch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 28px;
+            justify-items: center;
+        }
+        .watch-grid.single {
+            grid-template-columns: 1fr;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+        .watch-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 28px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .watch-card .head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .watch-card .badge {
+            background: linear-gradient(135deg, var(--cyan), #0099cc);
+            color: #001a26;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+        .watch-card .atm {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .watch-card .atm strong {
+            display: block;
+            font-size: 1.05rem;
+            color: var(--text);
+        }
+        .watch-card .visual {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            background: linear-gradient(180deg, rgba(0,212,255,0.03) 0%, transparent 100%);
+            border-radius: 12px;
+        }
+        .watch-card .visual img {
+            max-height: 170px;
+            max-width: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4));
+        }
+        .watch-card .visual .ring {
+            width: 90px;
+            height: 90px;
+            border: 3px solid var(--card-border);
+            border-radius: 50%;
+        }
+        .watch-card .brand {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--gold);
+            margin-bottom: 4px;
+        }
+        .watch-card .name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+        .watch-card .desc {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: 18px;
+        }
+        .watch-card .specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 18px;
+            padding: 16px 0;
+            border-top: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 16px;
+        }
+        .watch-card .specs div {
+            display: flex;
+            flex-direction: column;
+        }
+        .watch-card .specs dt {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+        }
+        .watch-card .specs dd {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .watch-card .meter .labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .watch-card .meter .bar {
+            height: 5px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        .watch-card .meter .bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), #0088cc);
+            border-radius: 3px;
+        }
+        
+        /* Ultimate watch - the deepest */
+        .watch-grid.single .watch-card {
+            max-width: 480px;
+            border-color: rgba(0, 212, 255, 0.3);
+            background: linear-gradient(145deg, rgba(0, 212, 255, 0.08) 0%, rgba(10, 30, 50, 0.95) 100%);
+        }
+        .watch-grid.single .watch-card::before {
+            content: 'THE DEEPEST';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--cyan);
+            color: #000;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            padding: 4px 14px;
+            border-radius: 4px;
+        }
+        .watch-grid.single .watch-card .visual {
+            height: 220px;
+        }
+        .watch-grid.single .watch-card .visual img {
+            max-height: 200px;
+        }
+
+        /* Finale - The Bottom of the World */
+        .finale {
+            text-align: center;
+            padding: 100px 24px 80px;
+        }
+        .finale-arrival {
+            margin-bottom: 60px;
+            animation: arrivalFade 1.5s ease both;
+        }
+        .finale-arrival .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--cyan);
+            margin-bottom: 16px;
+        }
+        .finale .big {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(4rem, 15vw, 10rem);
+            font-weight: 700;
+            color: var(--cyan);
+            line-height: 1;
+            text-shadow: 
+                0 0 60px rgba(0,212,255,0.5),
+                0 0 120px rgba(0,212,255,0.3);
+            margin-bottom: 8px;
+        }
+        .finale h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+        .finale p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            max-width: 480px;
+            margin: 0 auto 40px;
+            line-height: 1.8;
+        }
+        .finale-stat {
+            display: inline-flex;
+            gap: 40px;
+            padding: 20px 32px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 12px;
+            margin-bottom: 60px;
+        }
+        .finale-stat div {
+            text-align: center;
+        }
+        .finale-stat .num {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--cyan);
+            display: block;
+        }
+        .finale-stat .lbl {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+        @keyframes arrivalFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Return to Surface Button */
+        .return-surface {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: transparent;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 30px;
+            color: var(--cyan);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        .return-surface:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+        .return-surface svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            transform: rotate(180deg);
+        }
+
+        /* Footer */
+        .site-footer {
+            text-align: center;
+            padding: 60px 24px 40px;
+            border-top: 1px solid var(--card-border);
+            margin-top: 40px;
+            position: relative;
+            z-index: 10;
+        }
+        .footer-author {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            font-weight: 400;
+            margin-bottom: 16px;
+        }
+        .footer-socials {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .footer-socials a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+        .footer-socials a:hover {
+            background: rgba(0,212,255,0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            transform: translateY(-2px);
+        }
+        .footer-socials svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        .footer-copy {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #depth-gauge {
+                left: 12px;
+                height: 50vh;
+                max-height: 350px;
+            }
+            .gauge-track {
+                margin-left: 30px;
+            }
+            .gauge-mark {
+                font-size: 0.5rem;
+                left: -26px;
+            }
+            .gauge-readout {
+                padding: 6px 10px;
+                min-width: 80px;
+            }
+            .gauge-depth {
+                font-size: 0.95rem;
+            }
+            .gauge-stats {
+                gap: 8px;
+            }
+            .gauge-stat {
+                font-size: 0.55rem;
+            }
+            .watch-grid { grid-template-columns: 1fr; }
+            .watch-card { max-width: 100%; }
+            .finale-stat {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .hero-depth-num {
+                font-size: clamp(4rem, 15vw, 8rem);
+            }
+        }
+        @media (max-width: 480px) {
+            #depth-gauge {
+                left: 8px;
+                height: 40vh;
+                max-height: 280px;
+                min-height: 200px;
+            }
+            .gauge-track {
+                margin-left: 0;
+            }
+            .gauge-mark {
+                display: none;
+            }
+            .gauge-mark.major {
+                display: flex;
+                left: -28px;
+                font-size: 0.45rem;
+            }
+            .gauge-readout {
+                padding: 5px 8px;
+                min-width: 70px;
+            }
+            .gauge-depth {
+                font-size: 0.85rem;
+            }
+            .gauge-stats {
+                display: none;
+            }
+            .section.deep-zone,
+            .section.abyss-zone {
+                min-height: 100vh;
+                padding: 80px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="ocean"></div>
+<div id="vignette"></div>
+<canvas id="caustics"></canvas>
+
+<div id="depth-gauge">
+    <div class="gauge-track">
+        <!-- Depth markings -->
+        <div class="gauge-mark major" style="top: 0%">0m</div>
+        <div class="gauge-mark" style="top: 9%">1km</div>
+        <div class="gauge-mark" style="top: 18%">2km</div>
+        <div class="gauge-mark" style="top: 27%">3km</div>
+        <div class="gauge-mark" style="top: 36%">4km</div>
+        <div class="gauge-mark major" style="top: 45%">5km</div>
+        <div class="gauge-mark" style="top: 54%">6km</div>
+        <div class="gauge-mark" style="top: 64%">7km</div>
+        <div class="gauge-mark" style="top: 73%">8km</div>
+        <div class="gauge-mark" style="top: 82%">9km</div>
+        <div class="gauge-mark major" style="top: 91%">10km</div>
+        <div class="gauge-mark major" style="top: 100%">11km</div>
+        
+        <!-- Moving pointer -->
+        <div class="gauge-pointer" id="gauge-pointer">
+            <div class="gauge-arrow"></div>
+            <div class="gauge-readout">
+                <div class="gauge-depth"><span id="gauge-depth-num">0</span><span class="unit">m</span></div>
+                <div class="gauge-stats">
+                    <div class="gauge-stat"><span class="val" id="gauge-pressure">1</span> atm</div>
+                    <div class="gauge-stat"><span class="val" id="gauge-temp">20</span>°C</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<main>
+    <section class="hero">
+        <div class="hero-surface"></div>
+        <div class="hero-content">
+            <p class="hero-tag">An Interactive Exploration</p>
+            <h1>The Deep <em>Dive</em></h1>
+            <div class="hero-byline">
+                <p class="byline-name">By <a href="https://www.linkedin.com/in/ajinkya-nair-b050b9144/" target="_blank" rel="noopener">Ajinkya Nair</a></p>
+                <p class="byline-date">December 2025</p>
+                <div class="byline-socials">
+                    <a href="https://www.linkedin.com/in/ajinkya-nair-b050b9144/" target="_blank" rel="noopener" aria-label="LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    </a>
+                    <a href="https://instagram.com/ajinkya.nair" target="_blank" rel="noopener" aria-label="Instagram">
+                        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                    </a>
+                    <a href="https://x.com/ajinkyanair" target="_blank" rel="noopener" aria-label="X">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="hero-depth">
+                <span class="hero-depth-num">0</span><span class="hero-depth-unit">m</span>
+            </div>
+            <p class="hero-desc">Descend 11,000 meters into the abyss.<br>Discover timepieces engineered for the deep.</p>
+        </div>
+        <div class="scroll-hint">
+            <span>Begin Descent</span>
+            <div class="icon"></div>
+        </div>
+    </section>
+
+    <div id="content"></div>
+
+    <footer class="site-footer">
+        <div class="footer-author">Ajinkya Nair</div>
+        <div class="footer-socials">
+            <a href="https://www.linkedin.com/in/ajinkya-nair-b050b9144/" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+            <a href="https://instagram.com/ajinkya.nair" target="_blank" rel="noopener" aria-label="Instagram">
+                <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </a>
+            <a href="https://x.com/ajinkyanair" target="_blank" rel="noopener" aria-label="X">
+                <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="mailto:ajinkya.a.nair@gmail.com" aria-label="Email">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            </a>
+        </div>
+        <div class="footer-copy">© December 2025 Ajinkya Nair. All rights reserved.</div>
+    </footer>
+</main>
+
+<script>
+const MAX_DEPTH = 11000;
+
+// =====================
+// CREATURE & LANDMARK IMAGES
+// =====================
+const CREATURE_IMAGES = {
+    seaTurtle: { img: 'creatures/sea-turtle.png', emoji: '🐢' },
+    penguin: { img: 'creatures/emperor-penguin.png', emoji: '🐧' },
+    giantSquid: { img: 'creatures/giant-squid.png', emoji: '🦑' },
+    spermWhale: { img: 'creatures/sperm-whale.png', emoji: '🐋' },
+    dumboOctopus: { img: 'creatures/dumbo-octopus.png', emoji: '🐙' },
+    anglerfish: { img: 'creatures/anglerfish.png', emoji: '🐟' },
+    grenadierFish: { img: 'creatures/grenadier-fish.png', emoji: '🐟' },
+    snailfish: { img: 'creatures/snailfish.png', emoji: '🐟' }
+};
+
+const LANDMARK_IMAGES = {
+    building: { img: 'landmarks/wtc.png', emoji: '🏢' },
+    submarine: { img: 'landmarks/submarine.png', emoji: '🚢' },
+    titanic: { img: 'landmarks/titanic.png', emoji: '🚢' },
+    oceanFloor: { img: 'landmarks/ocean-floor.png', emoji: '🌊' },
+    trench: { img: 'landmarks/trench.png', emoji: '⬇️' },
+    cameronSub: { img: 'landmarks/deepsea-challenger.png', emoji: '🔬' }
+};
+
+// =====================
+// CONTENT DATA
+// =====================
+const DATA = [
+    // === SURFACE TO 100M: Human scale, relatable ===
+    
+    // Opening fact - set the stage
+    {
+        depth: 10,
+        type: 'fact',
+        number: '95%',
+        label: 'Unexplored',
+        title: 'The ocean is Earth\'s last frontier',
+        text: 'We\'ve mapped more of Mars than our own seabed. You\'re about to descend 11 kilometres into the unknown.'
+    },
+    
+    // First creature - friendly, familiar
+    {
+        depth: 40,
+        type: 'creature',
+        name: 'Green Sea Turtle',
+        latin: 'Chelonia mydas',
+        creature: 'seaTurtle',
+        fact: 'They\'ve been swimming these waters for 100 million years. Most spend their lives in the top 40 metres, riding currents between feeding grounds.'
+    },
+    
+    // First watch tier - 100m
+    {
+        depth: 100,
+        type: 'watches',
+        watches: [
+            {
+                brand: 'Seiko', name: '5 Sports SRPD53K1',
+                desc: "Where most dive watches live. The Seiko 5 has introduced more people to mechanical watches than any other. Pepsi bezel, exhibition caseback, genuine tool-watch credibility.",
+                movement: 'Calibre 4R36', case: 'Steel 42.5mm', year: '2019', feature: '41hr Reserve',
+                depth: 100, atm: 10,
+                img: 'Seiko_5_Sports.png'
+            },
+            {
+                brand: 'Favre-Leuba', name: 'Sea Sky',
+                desc: "The second-oldest Swiss watch brand, founded in 1737. The Sea Sky combines a dive bezel with a telemeter scale—measure distance by the speed of sound.",
+                movement: 'FL301', case: 'Steel 43mm', year: '2020', feature: 'Telemeter',
+                depth: 100, atm: 10,
+                img: 'favre-leuba-sea-sky-reviva-l00-20212-112-02-105-large_1.png'
+            },
+            {
+                brand: 'Oris', name: 'Divers Sixty-Five Chrono',
+                desc: "Oris revived the Sixty-Five from their 1965 archives. Independent watchmaking, Swiss made, with vintage-inspired proportions and a modern chronograph heart.",
+                movement: 'Oris 771', case: 'Steel 40mm', year: '2023', feature: 'Bi-Compax Chrono',
+                depth: 100, atm: 10,
+                img: 'oris-divers-01-771-7791-4051-07-6-20-01-large.png'
+            }
+        ]
+    },
+    
+    // Comparison - relatable landmark
+    {
+        depth: 93,
+        type: 'comparison',
+        icon: '🗽',
+        item1: { num: '93m', label: 'Your depth' },
+        item2: { num: '93m', label: 'Statue of Liberty' },
+        text: 'You\'re now deeper than Lady Liberty is tall. From crown to foundation, she\'d be completely submerged.'
+    },
+
+    // === 100-200M: Transition zone ===
+    
+    // Zone card
+    {
+        depth: 150,
+        type: 'zone',
+        range: '0–200m', name: 'Sunlight Zone', sci: 'Epipelagic',
+        desc: 'Where 90% of ocean life exists. Sunlight still reaches here, feeding the phytoplankton that produce half the oxygen you breathe.',
+        temp: '15–30°C', pressure: '1–21 ATM', light: '100–1%'
+    },
+    
+    // Human achievement - wonder, not fear
+    {
+        depth: 214,
+        type: 'fact',
+        number: '214m',
+        label: 'One breath',
+        title: 'Herbert Nitsch dove here without a tank',
+        text: 'The deepest free-dive ever. One breath, a weighted sled down, a balloon back up. Four minutes of absolute focus.'
+    },
+    
+    // Watch tier with context
+    {
+        depth: 200,
+        type: 'watch-story',
+        year: '1953',
+        title: 'The year everything changed',
+        text: 'Rolex and Blancpain both released dive watches rated to 100m. The tool watch was born. These are their descendants.'
+    },
+    {
+        depth: 200,
+        type: 'watches',
+        watches: [
+            {
+                brand: 'Grand Seiko', name: 'Evolution 9 SLGA015',
+                desc: "Inspired by the Kuroshio Current off Japan's coast. Spring Drive movement—neither mechanical nor quartz—accurate to 10 seconds per month.",
+                movement: 'Spring Drive 9RA5', case: 'Hi-Ti 43.8mm', year: '2022', feature: '120hr Reserve',
+                depth: 200, atm: 20,
+                img: 'grand-seiko-evolution-9-slga015g-large__1_.png'
+            },
+            {
+                brand: 'Tudor', name: 'Black Bay 58',
+                desc: "The Snowflake hand, conceived in 1969, remains Tudor's signature. This is Rolex's sibling brand—same quality, different philosophy.",
+                movement: 'MT5400', case: 'Steel 39mm', year: '2018', feature: 'COSC Certified',
+                depth: 200, atm: 20,
+                img: 'tudor-black-bay-m7943a1a0nu-0001-large.png'
+            },
+            {
+                brand: 'Doxa', name: 'Sub 200T Professional',
+                desc: "The iconic orange dial that Cousteau's divers made famous, in a more accessible 200m package. That colour isn't style—it's the easiest to read in murky water.",
+                movement: 'ETA 2824-2', case: 'Steel 42mm', year: '2021', feature: 'No-Deco Bezel',
+                depth: 200, atm: 20,
+                img: 'doxa-sub-200t-804-10-351s-10-large.png'
+            }
+        ]
+    },
+
+    // === 200-500M: Professional depth ===
+    
+    // Creature - wonder at adaptation
+    {
+        depth: 300,
+        type: 'creature',
+        name: 'Giant Pacific Octopus',
+        latin: 'Enteroctopus dofleini',
+        creature: 'dumboOctopus',
+        fact: 'The largest octopus species. Arm span of 6 metres, three hearts, blue blood. They can taste with their suckers and squeeze through any gap larger than their beak.'
+    },
+    
+    {
+        depth: 300,
+        type: 'comparison',
+        icon: '🗼',
+        item1: { num: '300m', label: 'Your depth' },
+        item2: { num: '330m', label: 'Eiffel Tower' },
+        text: 'You\'ve descended the full height of Paris\'s iron lady. Down here, pressure is 30 times what you feel at the surface.'
+    },
+    
+    {
+        depth: 330,
+        type: 'watches',
+        watches: [
+            {
+                brand: 'Omega', name: 'Seamaster Diver 300M',
+                desc: "James Bond's watch since GoldenEye. The wave-pattern dial, helium escape valve, and ceramic bezel have made it an icon for thirty years.",
+                movement: 'Calibre 8800', case: 'Steel 42mm', year: '1993', feature: 'HEV, METAS',
+                depth: 300, atm: 30,
+                img: 'omega-seamaster-210-90-42-20-01-001-large.png'
+            },
+            {
+                brand: 'Doxa', name: 'Sub 300T',
+                desc: "Jacques Cousteau's team wore Doxas. The orange dial wasn't style—it was survival. Easiest colour to read in murky water.",
+                movement: 'ETA 2824-2', case: 'Steel 42.5mm', year: '1967', feature: 'Cousteau Heritage',
+                depth: 300, atm: 30,
+                img: 'doxa-sub-300t-840-10-351-10-se10-large_1.png'
+            },
+            {
+                brand: 'TAG Heuer', name: 'Aquaracer 300',
+                desc: 'Motorsport DNA meets ocean. TAG built their reputation on timing Formula 1—the Aquaracer brings that precision underwater.',
+                movement: 'Calibre 5', case: 'Steel 43mm', year: '2021', feature: 'AR Sapphire',
+                depth: 300, atm: 30,
+                img: 'tag-heuer-aquaracer-wbp5116-ba0013-large.png'
+            }
+        ]
+    },
+    
+    // Human limit
+    {
+        depth: 332,
+        type: 'fact',
+        number: '14hrs',
+        label: 'To resurface',
+        title: 'Ahmed Gabr\'s scuba record: 332 metres',
+        text: 'The descent took 12 minutes. Coming back up safely—decompressing every few metres—took fourteen hours.'
+    },
+    
+    // Zone transition
+    {
+        depth: 400,
+        type: 'zone',
+        range: '200–1,000m', name: 'Twilight Zone', sci: 'Mesopelagic',
+        desc: 'Sunlight fades to nothing. Most creatures here have never seen the sun—they make their own light through bioluminescence.',
+        temp: '4–15°C', pressure: '21–101 ATM', light: '<1%'
+    },
+
+    // === 500-1000M: Beyond human limits ===
+    
+    {
+        depth: 500,
+        type: 'watches',
+        watches: [
+            {
+                brand: 'Carl F. Bucherer', name: 'Patravi ScubaTec',
+                desc: 'Each ScubaTec funds Manta Trust research. A dive watch that actually gives back to the ocean.',
+                movement: 'CFB 1950.1', case: 'Steel 44.6mm', year: '2017', feature: 'Manta Trust',
+                depth: 500, atm: 50,
+                img: 'carl-f-bucherer-patravi-00-10632-28-33-99-large.png'
+            },
+            {
+                brand: 'Bremont', name: 'Supermarine S500',
+                desc: 'Developed with Royal Navy clearance divers. British engineering for professionals who work in darkness.',
+                movement: 'BE-92AV', case: 'Steel 43mm', year: '2019', feature: 'Royal Navy',
+                depth: 500, atm: 50,
+                img: 'bremont-supermarine-sm43-dt-ss-bk-b-large.png'
+            },
+            {
+                brand: 'Panerai', name: 'Submersible Luna Rossa',
+                desc: "Born from Italian naval history. Panerai supplied the Italian frogmen in WWII. The Luna Rossa edition partners with the America's Cup sailing team.",
+                movement: 'P.900', case: 'Carbotech 47mm', year: '2023', feature: 'Carbotech Case',
+                depth: 500, atm: 50,
+                img: 'panerai-submercible-pam01543-large.png'
+            }
+        ]
+    },
+    
+    {
+        depth: 535,
+        type: 'fact',
+        number: '535m',
+        label: 'Human limit',
+        title: 'The deepest anyone works for a living',
+        text: 'Saturation divers live in pressurised chambers for weeks at a time. They breathe helium mixtures and speak in squeaky voices.'
+    },
+    
+    {
+        depth: 600,
+        type: 'watches',
+        watches: [
+            {
+                brand: 'Zenith', name: 'Defy Extreme Diver',
+                desc: "Zenith invented the first automatic chronograph in 1969—El Primero. This diver carries that heritage to 600 metres.",
+                movement: 'El Primero 9004', case: 'Titanium 45mm', year: '2022', feature: '36,000 vph',
+                depth: 600, atm: 60,
+                img: 'zenith-defy-95-9601-3620-51-i301-large.png'
+            },
+            {
+                brand: 'Omega', name: 'Seamaster Planet Ocean',
+                desc: "The bigger, bolder Seamaster. Co-Axial escapement reduces friction and extends service intervals. Orange accents for visibility in the deep.",
+                movement: 'Calibre 8900', case: 'Steel 43.5mm', year: '2016', feature: 'Master Chronometer',
+                depth: 600, atm: 60,
+                img: 'omega-seamaster-215-32-44-21-01-001-large_1.png'
+            },
+            {
+                brand: 'Unimatic', name: 'Modello Uno U1S-T',
+                desc: "Italian minimalism meets serious specs. No date, no frills—just 600m of pressure resistance in a titanium case. Limited editions sell out in minutes.",
+                movement: 'Seiko NH35', case: 'Titanium 40mm', year: '2024', feature: 'Made in Italy',
+                depth: 600, atm: 60,
+                img: 'unimatic-prodivers-2025-u1s-t-pd6-b-large.png'
+            }
+        ]
+    },
+    
+    // Creature - alien world begins
+    {
+        depth: 800,
+        type: 'creature',
+        name: 'Giant Squid',
+        latin: 'Architeuthis dux',
+        creature: 'giantSquid',
+        fact: 'Eyes the size of dinner plates—the largest in the animal kingdom. They evolved to detect the faint bioluminescence of prey in total darkness.'
+    },
+
+    // === 1000-3000M: The midnight zone ===
+    
+    {
+        depth: 1000,
+        type: 'watches',
+        watches: [
+            {
+                brand: 'Seiko', name: 'Marinemaster Professional',
+                desc: "The Tuna. Its monocoque case looks like a tuna can and has been trusted by saturation divers since 1975. Cult status among collectors.",
+                movement: '8L35 Hi-Beat', case: 'Titanium 52.4mm', year: '1975', feature: 'Monocoque',
+                depth: 1000, atm: 100,
+                img: 'marinemaster_professional.png'
+            },
+            {
+                brand: 'TAG Heuer', name: 'Aquaracer Superdiver',
+                desc: "TAG's deepest. 1000 metres of pressure resistance in a titanium case with helium escape valve.",
+                movement: 'TH30-00', case: 'Titanium 45mm', year: '2022', feature: 'HEV, COSC',
+                depth: 1000, atm: 100,
+                img: 'tag-heuer-aqauaracer-wbp5a8a-bf0619-large.png'
+            },
+            {
+                brand: 'Breitling', name: 'Superocean',
+                desc: "Breitling's dive heritage dates to 1957. The Superocean brings aviation-grade build quality underwater—COSC certified, 1000m rated, with a camouflage dial.",
+                movement: 'B17', case: 'Steel 46mm', year: '2024', feature: 'COSC Certified',
+                depth: 1000, atm: 100,
+                img: 'breitling-superocean-e10379d31l1s1-large_1.png'
+            }
+        ]
+    },
+    
+    {
+        depth: 1200,
+        type: 'zone',
+        range: '1,000–4,000m', name: 'Midnight Zone', sci: 'Bathypelagic',
+        desc: 'Zero sunlight has reached here in four billion years. Life survives on "marine snow"—dead matter drifting down from above.',
+        temp: '1–4°C', pressure: '101–401 ATM', light: '0%'
+    },
+    
+    {
+        depth: 2000,
+        type: 'creature',
+        name: 'Sperm Whale',
+        latin: 'Physeter macrocephalus',
+        creature: 'spermWhale',
+        fact: 'They collapse their own lungs to dive here, hold their breath for 90 minutes, and hunt giant squid by echolocation in absolute darkness.'
+    },
+    
+    {
+        depth: 2100,
+        type: 'watches',
+        watches: [{
+            brand: 'Bremont', name: 'Supermarine S2000',
+            desc: 'Beyond any practical diving depth. 45mm titanium, helium valve, 4.5mm domed sapphire. Built because they could.',
+            movement: 'BE-36AE', case: 'Titanium 45mm', year: '2020', feature: '4.5mm Sapphire',
+            depth: 2000, atm: 200,
+            img: 'S2000-yellow.png'
+        }]
+    },
+    
+    {
+        depth: 3000,
+        type: 'creature',
+        name: 'Anglerfish',
+        latin: 'Lophiiformes',
+        creature: 'anglerfish',
+        fact: 'Females carry a bioluminescent lure. Males are tiny—they bite onto females, fuse permanently, and dissolve into her body. Romance in the abyss.'
+    },
+
+    // === 3000-6000M: The abyss ===
+    
+    {
+        depth: 3800,
+        type: 'landmark',
+        icon: '🚢',
+        name: 'RMS Titanic',
+        text: 'Resting here since 1912. Undiscovered for 73 years. Fewer people have visited this wreck than have walked on the Moon.'
+    },
+    
+    {
+        depth: 4000,
+        type: 'fact',
+        number: '60%',
+        label: 'Of Earth\'s surface',
+        title: 'This is what "normal" looks like',
+        text: 'The average ocean floor sits at 4,000 metres. Most of our planet looks like this—dark, cold, crushing. We\'ve mapped only a quarter of it.'
+    },
+    
+    {
+        depth: 4300,
+        type: 'zone',
+        range: '4,000–6,000m', name: 'Abyssal Zone', sci: 'Abyssopelagic',
+        desc: 'The abyss. Near-freezing, crushing pressure, complete darkness. Life is sparse and alien. Time moves differently here.',
+        temp: '0–2°C', pressure: '401–601 ATM', light: '0%'
+    },
+    
+    {
+        depth: 5000,
+        type: 'watches',
+        watches: [{
+            brand: 'Sinn', name: 'UX Hydro',
+            desc: 'German engineering, radical solution. The case is filled with silicone oil—no air to compress. Theoretically, no depth limit.',
+            movement: 'ETA 2824-2', case: 'Steel 44mm', year: '1997', feature: 'Oil-Filled',
+            depth: 5000, atm: 500,
+            img: 'sinn.png'
+        }]
+    },
+    
+    {
+        depth: 6000,
+        type: 'watches',
+        watches: [{
+            brand: 'Omega', name: 'Planet Ocean Ultra Deep',
+            desc: "Created after Omega's 2019 Challenger Deep expedition. The case design eliminates the need for a helium valve entirely. O-Megasteel resists 6,000 metres.",
+            movement: 'Calibre 8912', case: 'O-Megasteel 45.5mm', year: '2022', feature: 'Full Ocean Depth',
+            depth: 6000, atm: 600,
+            img: 'omega-seamaster-215-30-46-21-03-001-large.png'
+        }]
+    },
+
+    // === 6000-11000M: The hadal zone ===
+    
+    {
+        depth: 6500,
+        type: 'zone',
+        range: '6,000–11,000m', name: 'Hadal Zone', sci: 'Hadalpelagic',
+        desc: 'Named for Hades, god of the underworld. Only ocean trenches reach this deep. Fewer than 30 humans have ever been here.',
+        temp: '1–4°C', pressure: '601–1,100 ATM', light: '0%'
+    },
+    
+    {
+        depth: 8000,
+        type: 'creature',
+        name: 'Mariana Snailfish',
+        latin: 'Pseudoliparis swirei',
+        creature: 'snailfish',
+        fact: 'The deepest fish ever recorded. Translucent, scaleless, built for pressure. Their cells contain special molecules that prevent proteins from collapsing.'
+    },
+    
+    {
+        depth: 8849,
+        type: 'comparison',
+        icon: '🏔️',
+        item1: { num: '8,849m', label: 'Your depth' },
+        item2: { num: '8,849m', label: 'Mt. Everest' },
+        text: 'You\'ve descended the full height of Earth\'s tallest mountain. If Everest sat on the seafloor here, its peak wouldn\'t break the surface.'
+    },
+    
+    {
+        depth: 10000,
+        type: 'fact',
+        number: '1,000',
+        label: 'Atmospheres',
+        title: 'Pressure beyond imagination',
+        text: 'The weight of a thousand atmospheres. Yet single-celled organisms thrive here, their chemistry adapted to conditions that would crush steel.'
+    },
+    
+    {
+        depth: 10908,
+        type: 'landmark',
+        icon: '🎬',
+        name: 'Cameron\'s Descent',
+        text: '2012. James Cameron piloted Deepsea Challenger to the bottom, alone. His cameras failed. His thrusters died. He made it back with footage that changed what we know.'
+    },
+    
+    // THE BOTTOM
+    {
+        depth: 11000,
+        type: 'watches',
+        watches: [{
+            brand: 'Rolex', name: 'Deepsea Challenge',
+            desc: "The ultimate expression of what a watch can survive. Built for Cameron's descent. 50mm RLX titanium, 9.5mm sapphire crystal, Ringlock System. Tested to 13,000 metres.",
+            movement: 'Calibre 3230', case: 'RLX Titanium 50mm', year: '2022', feature: '9.5mm Sapphire',
+            depth: 11000, atm: 1100,
+            img: 'rolex_deepsea_challenge.png'
+        }]
+    },
+    
+    { depth: 11000, type: 'finale' }
+];
+
+// =====================
+// RENDER
+// =====================
+function renderWatch(w) {
+    const pct = (w.depth / MAX_DEPTH * 100).toFixed(1);
+    const visualContent = w.img 
+        ? `<img src="images/${w.img}" alt="${w.brand} ${w.name}">`
+        : `<div class="ring"></div>`;
+    return `
+        <article class="watch-card">
+            <div class="head">
+                <span class="badge">${w.depth.toLocaleString()}m</span>
+                <div class="atm"><strong>${w.atm} ATM</strong>${w.atm} bar</div>
+            </div>
+            <div class="visual">${visualContent}</div>
+            <p class="brand">${w.brand}</p>
+            <h3 class="name">${w.name}</h3>
+            <p class="desc">${w.desc}</p>
+            <dl class="specs">
+                <div><dt>Movement</dt><dd>${w.movement}</dd></div>
+                <div><dt>Case</dt><dd>${w.case}</dd></div>
+                <div><dt>Year</dt><dd>${w.year}</dd></div>
+                <div><dt>Feature</dt><dd>${w.feature}</dd></div>
+            </dl>
+            <div class="meter">
+                <div class="labels"><span>Depth</span><span>${w.depth.toLocaleString()}m / 11,000m</span></div>
+                <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+            </div>
+        </article>
+    `;
+}
+
+function renderFact(item, zoneClass) {
+    return `
+        <section class="section ${zoneClass}" data-depth="${item.depth}">
+            <div class="section-inner">
+                <div class="fact-card">
+                    <p class="label">${item.label}</p>
+                    <p class="big-number">${item.number}</p>
+                    <h3>${item.title}</h3>
+                    <p>${item.text}</p>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderComparison(item, zoneClass) {
+    return `
+        <section class="section ${zoneClass}" data-depth="${item.depth}">
+            <div class="section-inner">
+                <div class="comparison-card">
+                    <div class="icon">${item.icon}</div>
+                    <div class="vs">
+                        <div class="vs-item">
+                            <p class="num">${item.item1.num}</p>
+                            <p class="lbl">${item.item1.label}</p>
+                        </div>
+                        <div class="vs-divider"></div>
+                        <div class="vs-item">
+                            <p class="num">${item.item2.num}</p>
+                            <p class="lbl">${item.item2.label}</p>
+                        </div>
+                    </div>
+                    <p>${item.text}</p>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderWatchStory(item, zoneClass) {
+    return `
+        <section class="section ${zoneClass}" data-depth="${item.depth}">
+            <div class="section-inner">
+                <div class="watch-story">
+                    <p class="year">${item.year}</p>
+                    <h3>${item.title}</h3>
+                    <p>${item.text}</p>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderCreature(item, zoneClass) {
+    const data = CREATURE_IMAGES[item.creature] || { emoji: '🐟' };
+    const visual = `<div class="emoji">${data.emoji}</div>`;
+    
+    return `
+        <section class="section ${zoneClass}" data-depth="${item.depth}">
+            <div class="section-inner">
+                <div class="creature-card">
+                    <div class="visual">${visual}</div>
+                    <p class="depth-tag">${item.depth.toLocaleString()}m</p>
+                    <h3>${item.name}</h3>
+                    ${item.latin ? `<p class="latin">${item.latin}</p>` : ''}
+                    <p>${item.fact}</p>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderLandmark(item, zoneClass) {
+    return `
+        <section class="section ${zoneClass}" data-depth="${item.depth}">
+            <div class="section-inner">
+                <div class="landmark-card">
+                    <div class="icon">${item.icon}</div>
+                    <p class="depth-tag">${item.depth.toLocaleString()}m</p>
+                    <h3>${item.name}</h3>
+                    <p>${item.text}</p>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+// Helper to determine section spacing based on depth
+function getDepthZoneClass(depth) {
+    if (depth >= 6000) return 'abyss-zone';
+    if (depth >= 3000) return 'deep-zone';
+    return '';
+}
+
+function render() {
+    const container = document.getElementById('content');
+    let html = '';
+    
+    // Sort by depth to ensure proper scroll order
+    const sortedData = [...DATA].sort((a, b) => a.depth - b.depth);
+
+    sortedData.forEach((item, i) => {
+        const zoneClass = getDepthZoneClass(item.depth);
+        
+        if (item.type === 'fact') {
+            html += renderFact(item, zoneClass);
+        } else if (item.type === 'comparison') {
+            html += renderComparison(item, zoneClass);
+        } else if (item.type === 'watch-story') {
+            html += renderWatchStory(item, zoneClass);
+        } else if (item.type === 'creature') {
+            html += renderCreature(item, zoneClass);
+        } else if (item.type === 'landmark') {
+            html += renderLandmark(item, zoneClass);
+        } else if (item.type === 'zone') {
+            html += `
+                <section class="section ${zoneClass}" data-depth="${item.depth}">
+                    <div class="section-inner">
+                        <div class="zone">
+                            <p class="range">${item.range}</p>
+                            <h2>${item.name}</h2>
+                            <p class="sci">${item.sci}</p>
+                            <p class="desc">${item.desc}</p>
+                            <div class="zone-stats">
+                                <div><span class="v">${item.temp}</span><span class="l">Temp</span></div>
+                                <div><span class="v">${item.pressure}</span><span class="l">Pressure</span></div>
+                                <div><span class="v">${item.light}</span><span class="l">Light</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            `;
+        } else if (item.type === 'watches') {
+            const single = item.watches.length === 1;
+            html += `
+                <section class="section ${zoneClass}" data-depth="${item.depth}">
+                    <div class="section-inner">
+                        <div class="watch-grid ${single ? 'single' : ''}">
+                            ${item.watches.map(renderWatch).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        } else if (item.type === 'finale') {
+            html += `
+                <section class="section abyss-zone" data-depth="${item.depth}">
+                    <div class="section-inner">
+                        <div class="finale">
+                            <div class="finale-arrival">
+                                <p class="label">You have reached</p>
+                                <p class="big">11,000m</p>
+                                <h2>Challenger Deep</h2>
+                            </div>
+                            <p>The lowest point on Earth. Fewer people have been here than have walked on the Moon. Pressure at 1,100 atmospheres would crush a submarine. Yet four watches have made this journey—and returned.</p>
+                            <div class="finale-stat">
+                                <div>
+                                    <span class="num">1,100</span>
+                                    <span class="lbl">Atmospheres</span>
+                                </div>
+                                <div>
+                                    <span class="num">4°C</span>
+                                    <span class="lbl">Temperature</span>
+                                </div>
+                                <div>
+                                    <span class="num">0%</span>
+                                    <span class="lbl">Sunlight</span>
+                                </div>
+                            </div>
+                            <button class="return-surface" onclick="returnToSurface()">
+                                <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                                Return to Surface
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+    });
+
+    container.innerHTML = html;
+}
+
+// =====================
+// DEPTH CALCULATION
+// =====================
+let sections = [];
+let depths = [];
+
+function cacheSections() {
+    sections = Array.from(document.querySelectorAll('.section[data-depth]'));
+    depths = sections.map(s => parseInt(s.dataset.depth));
+}
+
+function getDepth() {
+    const scrollY = window.scrollY;
+    const vh = window.innerHeight;
+    const center = scrollY + vh / 2;
+
+    // In hero
+    if (center < vh) {
+        return Math.round((center / vh) * (depths[0] || 12));
+    }
+
+    // Find closest section
+    let closest = 0;
+    let minDist = Infinity;
+
+    sections.forEach((sec, i) => {
+        const rect = sec.getBoundingClientRect();
+        const secCenter = scrollY + rect.top + rect.height / 2;
+        const dist = Math.abs(center - secCenter);
+        if (dist < minDist) {
+            minDist = dist;
+            closest = i;
+        }
+    });
+
+    const sec = sections[closest];
+    const rect = sec.getBoundingClientRect();
+    const secCenter = scrollY + rect.top + rect.height / 2;
+    const currentDepth = depths[closest];
+
+    // Interpolate to next or prev
+    if (center > secCenter && closest < sections.length - 1) {
+        const nextDepth = depths[closest + 1];
+        const nextSec = sections[closest + 1];
+        const nextRect = nextSec.getBoundingClientRect();
+        const nextCenter = scrollY + nextRect.top + nextRect.height / 2;
+        const t = Math.min(1, Math.max(0, (center - secCenter) / (nextCenter - secCenter)));
+        return Math.round(currentDepth + (nextDepth - currentDepth) * t);
+    } else if (center < secCenter && closest > 0) {
+        const prevDepth = depths[closest - 1];
+        const prevSec = sections[closest - 1];
+        const prevRect = prevSec.getBoundingClientRect();
+        const prevCenter = scrollY + prevRect.top + prevRect.height / 2;
+        const t = Math.min(1, Math.max(0, (secCenter - center) / (secCenter - prevCenter)));
+        return Math.round(currentDepth - (currentDepth - prevDepth) * t);
+    }
+
+    return currentDepth;
+}
+
+// =====================
+// ENVIRONMENT
+// =====================
+function getTemp(d) {
+    if (d < 200) return Math.round(20 - d * 0.03);
+    if (d < 1000) return Math.round(14 - (d - 200) * 0.0125);
+    return Math.round(4 - Math.min(3, (d - 1000) * 0.0003));
+}
+
+function getLight(d) {
+    return d < 200 ? Math.max(0, Math.round(100 - d * 0.5)) : 0;
+}
+
+function getZone(d) {
+    if (d < 200) return 'Sunlight';
+    if (d < 1000) return 'Twilight';
+    if (d < 4000) return 'Midnight';
+    if (d < 6000) return 'Abyssal';
+    return 'Hadal';
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function updateOcean(d) {
+    const p = d / MAX_DEPTH;
+    let r, g, b;
+
+    if (p < 0.02) {
+        // Bright turquoise at surface
+        r = lerp(0, 5, p / 0.02);
+        g = lerp(180, 150, p / 0.02);
+        b = lerp(220, 190, p / 0.02);
+    } else if (p < 0.1) {
+        // Transition to deeper blue
+        const t = (p - 0.02) / 0.08;
+        r = lerp(5, 3, t);
+        g = lerp(150, 90, t);
+        b = lerp(190, 140, t);
+    } else if (p < 0.4) {
+        // Into the twilight
+        const t = (p - 0.1) / 0.3;
+        r = lerp(3, 2, t);
+        g = lerp(90, 40, t);
+        b = lerp(140, 70, t);
+    } else {
+        // Deep darkness
+        const t = Math.min(1, (p - 0.4) / 0.6);
+        r = lerp(2, 0, t);
+        g = lerp(40, 8, t);
+        b = lerp(70, 16, t);
+    }
+
+    document.getElementById('ocean').style.background = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    
+    // Update vignette intensity with depth
+    const vignetteIntensity = 150 + (p * 200);
+    const vignetteOpacity = 0.3 + (p * 0.5);
+    document.getElementById('vignette').style.boxShadow = `inset 0 0 ${vignetteIntensity}px rgba(0,0,0,${vignetteOpacity})`;
+    
+    // Fade caustics - gone by 300m (p = 0.027)
+    causticsOpacity = Math.max(0, 1 - (p / 0.027));
+}
+
+// =====================
+// OBSERVER
+// =====================
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+    });
+}, { threshold: 0.15 });
+
+function observe() {
+    sections.forEach(s => observer.observe(s));
+}
+
+// =====================
+// BUBBLES
+// =====================
+function createBubbles() {
+    for (let i = 0; i < 20; i++) {
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        const size = 2 + Math.random() * 4;
+        b.style.cssText = `
+            width: ${size}px;
+            height: ${size}px;
+            left: ${Math.random() * 100}%;
+            animation-duration: ${8 + Math.random() * 10}s;
+            animation-delay: ${-Math.random() * 15}s;
+        `;
+        document.body.appendChild(b);
+    }
+}
+
+// =====================
+// UPDATE LOOP
+// =====================
+const gaugeDepthEl = document.getElementById('gauge-depth-num');
+const gaugePressureEl = document.getElementById('gauge-pressure');
+const gaugeTempEl = document.getElementById('gauge-temp');
+const gaugePointerEl = document.getElementById('gauge-pointer');
+const gaugeTrackEl = document.querySelector('.gauge-track');
+
+// Swimming creatures - depth ranges where they appear
+const creatureRanges = {
+    'shark1': { min: 20, max: 400 },
+    'shark2': { min: 50, max: 350 }
+};
+
+let ticking = false;
+
+function updateCreatures(depth) {
+    Object.entries(creatureRanges).forEach(([id, range]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (depth >= range.min && depth <= range.max) {
+                el.classList.add('visible');
+            } else {
+                el.classList.remove('visible');
+            }
+        }
+    });
+}
+
+function update() {
+    const d = getDepth();
+    const progress = (d / MAX_DEPTH) * 100;
+    
+    // Update gauge readout
+    gaugeDepthEl.textContent = d.toLocaleString();
+    gaugePressureEl.textContent = Math.round(d / 10) + 1;
+    gaugeTempEl.textContent = getTemp(d);
+    
+    // Move pointer down the track
+    gaugePointerEl.style.top = progress + '%';
+    
+    // Fill the track
+    gaugeTrackEl.style.setProperty('--progress', progress + '%');
+    
+    updateOcean(d);
+    updateCreatures(d);
+
+    // Fade bubbles as we go deeper
+    document.querySelectorAll('.bubble').forEach(b => {
+        b.style.opacity = Math.max(0.05, 1 - d / 1200);
+    });
+
+    ticking = false;
+}
+
+window.addEventListener('scroll', () => {
+    if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+    }
+});
+
+// =====================
+// CAUSTICS (Canvas-based, GPU accelerated)
+// =====================
+const causticsCanvas = document.getElementById('caustics');
+const ctx = causticsCanvas.getContext('2d');
+let causticParticles = [];
+let causticsOpacity = 1;
+let smoothScrollSpeed = 0;
+
+function resizeCaustics() {
+    causticsCanvas.width = window.innerWidth;
+    causticsCanvas.height = window.innerHeight;
+}
+
+function initCaustics() {
+    resizeCaustics();
+    causticParticles = [];
+    
+    // Create 200 bubbles with varied sizes
+    for (let i = 0; i < 200; i++) {
+        // Mix of tiny (1-2px), small (2-3px), and occasional medium (3-5px)
+        let radius;
+        const sizeRoll = Math.random();
+        if (sizeRoll < 0.5) {
+            radius = 1 + Math.random() * 1; // tiny: 1-2px
+        } else if (sizeRoll < 0.85) {
+            radius = 2 + Math.random() * 1.5; // small: 2-3.5px
+        } else {
+            radius = 3 + Math.random() * 2; // medium: 3-5px
+        }
+        
+        causticParticles.push({
+            x: Math.random() * causticsCanvas.width,
+            y: Math.random() * causticsCanvas.height,
+            radius: radius,
+            alpha: 0.15 + Math.random() * 0.25,
+            speedX: (Math.random() - 0.5) * 0.2,
+            speedY: -(0.1 + Math.random() * 0.3), // negative = rising
+            wobble: Math.random() * Math.PI * 2,
+            wobbleSpeed: 0.02 + Math.random() * 0.03
+        });
+    }
+}
+
+let lastTime = 0;
+function drawCaustics(timestamp) {
+    const delta = timestamp - lastTime;
+    lastTime = timestamp;
+    
+    if (causticsOpacity <= 0) {
+        ctx.clearRect(0, 0, causticsCanvas.width, causticsCanvas.height);
+        requestAnimationFrame(drawCaustics);
+        return;
+    }
+    
+    ctx.clearRect(0, 0, causticsCanvas.width, causticsCanvas.height);
+    
+    // Smooth out the scroll speed (ease towards zero)
+    smoothScrollSpeed *= 0.92;
+    
+    causticParticles.forEach(p => {
+        // Wobble side to side as they rise
+        p.wobble += p.wobbleSpeed;
+        
+        // Rise upward + gentle horizontal wobble
+        p.x += p.speedX + Math.sin(p.wobble) * 0.3;
+        p.y += p.speedY - smoothScrollSpeed * 0.3; // scroll makes them rise faster
+        
+        // Wrap around screen
+        if (p.x < -10) p.x = causticsCanvas.width + 10;
+        if (p.x > causticsCanvas.width + 10) p.x = -10;
+        if (p.y < -10) p.y = causticsCanvas.height + 10; // respawn at bottom
+        
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * causticsOpacity})`;
+        ctx.fill();
+    });
+    
+    requestAnimationFrame(drawCaustics);
+}
+
+// Scroll listener for reactivity
+window.addEventListener('scroll', () => {
+    smoothScrollSpeed = Math.min(2, smoothScrollSpeed + 0.2);
+}, { passive: true });
+
+window.addEventListener('resize', resizeCaustics);
+
+// =====================
+// RETURN TO SURFACE
+// =====================
+function returnToSurface() {
+    // Smooth scroll to top with a nice duration
+    const start = window.scrollY;
+    const duration = Math.min(4000, Math.max(2000, start / 3)); // 2-4 seconds based on depth
+    const startTime = performance.now();
+    
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        window.scrollTo(0, start * (1 - easeOut));
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+    
+    requestAnimationFrame(animate);
+}
+
+// =====================
+// INIT
+// =====================
+render();
+cacheSections();
+observe();
+createBubbles();
+initCaustics();
+drawCaustics();
+update();
+</script>
+
+</body>
+</html>
