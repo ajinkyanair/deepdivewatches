@@ -71,7 +71,7 @@ export const HISTORY: HistoryItem[] = [
   { year: '1970', title: 'Ploprof', text: 'Omega’s monobloc tool for professional divers.', plate: 'ploprof' },
   { year: '1975', title: 'The Tuna', text: 'Seiko shrouds a 600m saturation diver.' },
   { year: '1982', title: 'ISO 6425', text: 'The first international standard for divers’ watches.' },
-  { year: '1983', title: 'Dive computers', text: 'Wrist computers start doing the decompression maths.' },
+  { year: '1983', title: 'Dive computers', text: 'Dive computers start doing the decompression maths.' },
   { year: '2011', title: '4,000m', text: 'Hublot’s Oceanographic 4000.', plate: 'hublot-oceanographic' },
   { year: '2012', title: 'Cameron’s dive', text: 'An experimental Rolex reaches the bottom again.', plate: 'dsc-2012' },
   { year: '2019', title: 'Three Omegas', text: 'Ultra Deep prototypes reach 10,928m.', plate: 'omega-ud-prototypes' },

@@ -107,11 +107,12 @@ export class Hud {
   updateMine(d: number) {
     const w = dive.watch;
     this.mine.hidden = !w;
-    if (!w) return;
+    if (!w) { delete this.root.dataset.mine; return; }
     const v = verdict(w, d);
     this.mineName.textContent = w.name;
     this.mineVerdict.textContent = v.short;
     this.mine.dataset.level = String(v.level);
+    this.root.dataset.mine = String(v.level);
     this.mine.title = v.long;
     this.last.level = v.level;
   }

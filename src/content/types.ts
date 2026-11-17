@@ -39,7 +39,7 @@ export interface Watch {
   ref?: string;
   rating: number; // metres
   standard: Standard;
-  caseMm: number;
+  caseMm?: number;
   material: string;
   movement: string;
   reserve?: string;

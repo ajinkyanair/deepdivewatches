@@ -81,7 +81,7 @@ export function buildSprite(spec: SpriteSpec): Sprite {
       } else if (al < 120) continue;
       // canvas returns un-premultiplied colours; snap glow colours exactly
       for (const [gr, ggg, gb] of glowSet) {
-        if (Math.abs(r - gr) + Math.abs(gg - ggg) + Math.abs(b - gb) < 60) {
+        if (Math.abs(r - gr) + Math.abs(gg - ggg) + Math.abs(b - gb) < 36) {
           r = gr;
           gg = ggg;
           b = gb;

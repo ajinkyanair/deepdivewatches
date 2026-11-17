@@ -24,6 +24,7 @@
 @media (min-width: 760px) { :root { --gutter: 32px; } }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
@@ -152,8 +153,13 @@ main, .topbar, .hud, .ribbon { position: relative; z-index: 2; }
   .hud.show-hint:not(.is-open) .hud__hint { display: none; }
   .hud.is-open .hud__mine:not([hidden]) { display: flex; position: relative; z-index: 2; }
   .hud.is-open .hud__toggle { inset: 0 0 auto 0; height: 52px; }
-  .hud__dot-mobile { display: block; }
+  /* your watch's status, as a dot in the pill */
+  .hud[data-mine] .hud__pilldot { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); flex: none; }
+  .hud[data-mine='1'] .hud__pilldot, .hud[data-mine='2'] .hud__pilldot { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .hud[data-mine='3'] .hud__pilldot { background: var(--danger); box-shadow: 0 0 10px var(--danger); animation: pulse 1.2s infinite; }
+  .hud.is-open .hud__pilldot { display: none; }
 }
+.hud__pilldot { display: none; }
 
 /* ─────────────── ribbon: true-scale depth navigation ─────────────── */
 .ribbon { position: fixed; z-index: 18; top: 64px; bottom: 28px; right: 10px; width: 30px; }
@@ -227,7 +233,8 @@ main, .topbar, .hud, .ribbon { position: relative; z-index: 2; }
 @media (min-width: 1000px) {
   .side--left > * { margin-left: max(var(--gutter), calc(50vw - 560px)); margin-right: auto; max-width: 520px; }
   .side--right > * { margin-right: max(300px, calc(50vw - 560px)); margin-left: auto; max-width: 520px; }
-  .side--wide > * { max-width: 1120px; }
+  /* wide pieces stay clear of the HUD on the right */
+  .stop.side--wide > * { max-width: none; margin-left: max(var(--gutter), calc(50vw - 560px)); margin-right: max(300px, calc(50vw - 560px)); }
 }
 .side--wide > .stop__depth { max-width: 1120px; }
 
@@ -502,7 +509,9 @@ dialog::backdrop { background: rgba(1, 8, 13, 0.7); backdrop-filter: blur(4px); 
 .drawer__head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 6px; }
 .drawer__head h2 { font: 400 1.8rem/1 var(--serif); margin: 0; }
 .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 8px 16px 0; border-bottom: 1px solid var(--line); scrollbar-width: none; flex: none; }
-.tabs [role=tab] { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 10px; font: 0.68rem/1 var(--pixel); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); cursor: pointer; white-space: nowrap; }
+.tabs { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+.tabs.is-end { -webkit-mask-image: none; mask-image: none; }
+.tabs [role=tab] { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 7px; font: 0.66rem/1 var(--pixel); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); cursor: pointer; white-space: nowrap; }
 .tabs [aria-selected=true] { color: var(--cyan); border-bottom-color: var(--cyan); }
 .tabpanel { padding: 16px 20px 40px; overflow: auto; flex: 1; }
 .logbook { list-style: none; margin: 0; padding: 0; }

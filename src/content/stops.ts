@@ -76,7 +76,7 @@ export const STOPS: Stop[] = [
   {
     id: 'liberty', kind: 'compare', landmark: 'liberty', height: 93, depth: 93, side: 'right', nav: '93m: Statue of Liberty',
     title: 'Deeper than Lady Liberty is tall',
-    body: 'From the base of her pedestal to the tip of her torch she stands 93 metres. Stand her on the seabed here and her torch would just reach the surface.',
+    body: 'From the ground to the tip of her torch, pedestal included, she stands 93 metres. Stand her on the seabed here and her torch would just reach the surface.',
   },
   { id: 'w100', kind: 'watches', depth: 100, side: 'wide', nav: '100m watches', title: '100 metres', intro: 'Where most watches live. Good for swimming and snorkelling; none of these is meant for scuba.', ids: ['seiko-5-sports', 'oris-sixty-five-chrono', 'favre-leuba-sea-sky'] },
   {
@@ -87,7 +87,7 @@ export const STOPS: Stop[] = [
   {
     id: 'orange', kind: 'engineering', part: 'hands', depth: 155, side: 'right', nav: 'Why orange',
     title: 'Why some dials are orange',
-    body: 'In the late 1960s Doxa tested which dial colour stayed readable longest in murky water and landed on orange. Its SUB 300 became the watch of the divers around Jacques Cousteau. The hands followed the same logic: a fat, luminous minute hand, because the minute hand is the one your life depends on.',
+    body: 'In the late 1960s Doxa chose orange for its dials because it stays readable in murky water. Its SUB 300 became the watch of the divers around Jacques Cousteau. The hands followed the same logic: a fat, luminous minute hand, because the minute hand is the one your life depends on.',
   },
   {
     id: 'computer', kind: 'fact', depth: 175, side: 'left', nav: 'Computers and watches',
@@ -114,7 +114,7 @@ export const STOPS: Stop[] = [
     id: 'nitsch', kind: 'fact', depth: 214, side: 'right', nav: '214m: one breath',
     number: '214m', label: 'One breath',
     title: 'Herbert Nitsch came here without a tank',
-    body: 'In 2007 he rode a weighted sled down on a single breath and a lift bag back up. It still stands as the deepest freedive under the sport’s official rules.',
+    body: 'In 2007 he rode a weighted sled down on a single breath and a lift bag back up. It is still the deepest no-limits dive the sport’s governing body ever ratified.',
   },
 
   // ─────────────── Chapter 3 · Keep the water out ───────────────
@@ -136,7 +136,7 @@ export const STOPS: Stop[] = [
   {
     id: 'caseback', kind: 'engineering', part: 'caseback', depth: 285, side: 'left',
     title: 'Screw the back down, or don’t have one',
-    body: 'Dive watches screw their casebacks on, often pressing a gasket flat. A few go further: Seiko’s Tuna and Omega’s Ploprof are monocoque or monobloc, meaning the movement goes in through the front and there’s no back to fail at all.',
+    body: 'Dive watches screw their casebacks on, often pressing a gasket flat. A few go further: Seiko’s 1000m Tuna and Omega’s original 1970 Ploprof have one-piece cases, loaded through the front, with no back to fail.',
   },
   {
     id: 'nautilus', kind: 'nature', creature: 'nautilus', depth: 300, side: 'right', rhyme: 'physics', nav: 'Nature’s depth rating', sources: ['nautilus'],
@@ -177,7 +177,7 @@ export const STOPS: Stop[] = [
   {
     id: 'hev', kind: 'engineering', part: 'hev', depth: 545, side: 'right', nav: 'The helium valve',
     title: 'Why some watches have a tiny extra valve',
-    body: 'Saturation divers breathe helium, and helium atoms are small enough to seep past a watch’s gaskets. When the divers decompress, the gas trapped inside expands faster than it can leak out and can push the crystal off. Rolex patented a one-way valve to let it escape in 1967. Others, like Seiko, seal so well that the helium never gets in.',
+    body: 'Saturation divers breathe helium, and helium atoms are small enough to seep past a watch’s gaskets. When the divers decompress, the gas trapped inside expands faster than it can leak out and can push the crystal off. Rolex patented a one-way valve to let it escape in 1967. Others, like Seiko, seal their cases so tightly that too little helium gets in to need one.',
   },
   { id: 'helium-line', kind: 'line', depth: 555, text: 'No animal breathes helium. This problem is ours.' },
   { id: 'w600', kind: 'watches', depth: 600, side: 'wide', nav: '600m watches', title: '600 metres', ids: ['zenith-defy-extreme-diver', 'omega-planet-ocean-600', 'unimatic-prodiver'] },
@@ -213,7 +213,7 @@ export const STOPS: Stop[] = [
   {
     id: 'squid', kind: 'nature', creature: 'squid', depth: 850, side: 'left', rhyme: 'none',
     label: 'Field note', title: 'Eyes the size of dinner plates',
-    body: 'A giant squid’s eyes reach about 27cm across, the largest of any animal. They’re thought to work best at spotting something big moving against the faint glow of everything else: like a sperm whale.',
+    body: 'A giant squid’s eyes reach about 27cm across, matched only by its cousin the colossal squid. They’re thought to work best at spotting something big moving against the faint glow of everything else: like a sperm whale.',
   },
   {
     id: 'sponge', kind: 'nature', creature: 'sponge', depth: 940, side: 'right', rhyme: 'physics', sources: ['sponge'],

@@ -375,9 +375,9 @@ export class World {
         const dist = Math.sqrt(d2) / R;
         const k = (dist < 0.55 ? 1 : 1 - (dist - 0.55) / 0.45) * T.power;
         // true colours inside the beam
-        lr = Math.max(lr, r * (0.25 + 0.85 * k) * k + lr * (1 - k));
-        lg = Math.max(lg, g * (0.25 + 0.85 * k) * k + lg * (1 - k));
-        lb = Math.max(lb, b * (0.25 + 0.85 * k) * k + lb * (1 - k));
+        lr = Math.max(lr, r * (0.2 + 0.8 * k) * k + lr * (1 - k));
+        lg = Math.max(lg, g * (0.2 + 0.8 * k) * k + lg * (1 - k));
+        lb = Math.max(lb, b * (0.2 + 0.8 * k) * k + lb * (1 - k));
       }
     }
     const L = this.lamps;
@@ -387,7 +387,8 @@ export class World {
       const d2 = dx * dx + dy * dy;
       const R = L[i + 2];
       if (d2 < R * R) {
-        const k = (1 - Math.sqrt(d2) / R) * L[i + 3];
+        // lamps point down and out: what's above them only catches spill
+        const k = (1 - Math.sqrt(d2) / R) * L[i + 3] * (dy < 0 ? Math.max(0.3, 1 + dy / 8) : 1);
         lr = Math.max(lr, r * k * 0.95);
         lg = Math.max(lg, g * k * 0.92);
         lb = Math.max(lb, b * k * 0.8);

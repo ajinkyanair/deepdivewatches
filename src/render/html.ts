@@ -62,7 +62,7 @@ export function watchCard(w: Watch) {
     ? `<img src="images/watches/${img}.webp" srcset="images/watches/${img}-s.webp 360w, images/watches/${img}.webp 720w" sizes="(max-width: 700px) 70vw, 300px" alt="${esc(w.brand + ' ' + w.model)}" loading="lazy" decoding="async" width="360" height="560">`
     : `<canvas class="pxwatch" data-watch="${w.id}" width="96" height="96" aria-label="${esc(w.brand + ' ' + w.model)} illustration"></canvas>`;
   const specs = [
-    ['Case', `${w.caseMm}mm ${w.material}`],
+    ['Case', `${w.caseMm ? `${w.caseMm}mm ` : ''}${w.material}`],
     ['Movement', w.movement],
     w.reserve ? ['Reserve', w.reserve] : null,
     w.year ? ['Year', w.year] : null,
@@ -225,7 +225,7 @@ ${base.map(([n, r, g, b]) => `<i>${n}</i>${depths.map((d) => cell(r, g, b, d)).j
   <ul><li>200m, water resistant</li><li>Quartz, about ±20 seconds a month</li><li>Steel, mineral crystal</li><li>Battery every few years</li></ul></div>
   <div class="same__vs" aria-hidden="true">vs</div>
   <div class="same__col"><img src="images/watches/${imageName(gs.id)}-s.webp" alt="Grand Seiko SLGA015" loading="lazy" width="120" height="186"><h3>Grand Seiko SLGA015</h3><p class="same__price">≈ $12,600</p>
-  <ul><li>200m, certified Diver’s (ISO 6425)</li><li>Spring Drive, about ±10 seconds a month</li><li>Titanium, sapphire, hand-polished</li><li>Five days of power, no battery</li></ul></div>
+  <ul><li>200m, rated Diver’s</li><li>Spring Drive, about ±10 seconds a month</li><li>Titanium, sapphire, hand-polished</li><li>Five days of power, no battery</li></ul></div>
 </div>
 <p class="same__verdict"><b>What the money buys:</b> certification, materials, finishing, a movement you never have to replace a battery in, and a name. <b>What it doesn’t buy:</b> a single extra metre.</p>
 ${sourcesHtml(['duro', 'gs-slga015'])}

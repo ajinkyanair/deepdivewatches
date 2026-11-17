@@ -35,6 +35,12 @@ function openDialog(id: string) {
 }
 
 export function setupDialogs(onJump: (id: string) => void) {
+  const strip = document.querySelector<HTMLElement>('.tabs');
+  if (strip) {
+    const atEnd = () => strip.classList.toggle('is-end', strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 4);
+    strip.addEventListener('scroll', atEnd, { passive: true });
+    new ResizeObserver(atEnd).observe(strip);
+  }
   document.addEventListener('click', (e) => {
     const t = (e.target as HTMLElement).closest<HTMLElement>('[data-open]');
     if (!t) return;
@@ -72,7 +78,10 @@ export function openKit(tab: string) {
 }
 
 function selectTab(tab: string) {
-  for (const b of $$('.tabs [role=tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+  for (const b of $$('.tabs [role=tab]')) {
+    b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    if (b.dataset.tab === tab) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
   for (const p of $$('.tabpanel')) p.hidden = p.id !== `tab-${tab}`;
   if (tab === 'compare') renderCompare();
   if (tab === 'field') renderFieldList();
@@ -141,6 +150,7 @@ export function paintMine() {
     if (w) cur.innerHTML = `Riding along: <b>${w.name}</b>, rated ${fmtInt(w.rating)}m${w.diver ? ' (Diver’s)' : ''}. Built for ${useLabel(usageDepth(w))}; tested to ${fmtInt(testDepth(w))}m. <button type="button" class="link" data-open="byw">Change</button>`;
   }
   for (const b of $$('[data-byw-rating]')) b.classList.toggle('is-on', !!w && +b.dataset.bywRating! === w.rating);
+  for (const b of $$('[data-byw-clear]')) b.hidden = !w;
   const c = $('.pxwatch--mine') as HTMLCanvasElement;
   if (w && c) {
     c.width = 40;
@@ -261,7 +271,7 @@ function renderCompare() {
             ['Rated', depthStr(w.rating)],
             ['Standard', { iso6425: 'Diver’s (ISO 6425)', iso2281: 'Water resistant', dnv: 'DNV certified', maker: 'Maker’s rating' }[w.standard]],
             ['Price', w.price.usd ? fmtPrice(w.price.usd) : w.price.local ? `${w.price.local.currency} ${fmtInt(w.price.local.amount)}` : '—'],
-            ['Case', `${w.caseMm}mm ${w.material}`],
+            ['Case', `${w.caseMm ? `${w.caseMm}mm ` : ''}${w.material}`],
             ['Movement', w.movement],
           ]
         : [
